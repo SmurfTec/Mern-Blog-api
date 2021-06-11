@@ -1,17 +1,22 @@
 const CatModel = require('./../models/categories');
 const catchAsync = require('./../utils/catchAsync');
+const AppError = require('../utils/appError');
+const catchAsync = require('../utils/catchAsync');
 
-exports.getAllCategories = async (req, res) => {
-  const categories = await CatModel.find({});
+exports.getAllCategories = catchAsync(async (req, res) => {
 
-  res.render('categories', {
-    userName: req.user.name,
+  const categories = await CatModel.find();
+  
+  if(!categories)
+    return next(new AppError(' No category found '),500)
+
+  res.status(200).json({
+    status:'success',
     categories: categories,
-    success: req.flash('success'),
-    message: req.flash('message'),
     user: req.user,
-  });
-};
+  })
+  
+});
 
 exports.addCategory = catchAsync(async (req, res, next) => {
   // Check if Title and Summary Exists in req.body
@@ -21,10 +26,11 @@ exports.addCategory = catchAsync(async (req, res, next) => {
     title,
     summary,
   });
-  req.flash('success', 'Category added successfully !');
-  res.json({
+  
+  res.status(200).json({
     status: 'success',
   });
+
 });
 
 exports.getCategory = catchAsync(async (req, res, next) => {
@@ -32,87 +38,60 @@ exports.getCategory = catchAsync(async (req, res, next) => {
 
   const category = await CatModel.findById(id);
 
-  if (!category) {
-    req.flash('message', 'No Category with that ID');
-    // res.redirect('/categories');
-    return res.render('error', {
-      message: 'No Category Found with this id',
-      userName: req.user,
-      user: req.user,
-    });
-  }
+  if(!category)
+    return next(new AppError(' No category found '),500)
 
-  res.render('category', {
-    category,
-    userName: req.user.name,
-    message: req.flash('message'),
-    success: req.flash('success'),
+  res.status(200).json({
+    status:'success',
+
+  })
+    es.render('category', {
+    category:category,
     user: req.user,
   });
-  // res.render('categoriescopy', { category, userName: req.user.name });
+
 });
 
 exports.updateCategory = catchAsync(async (req, res, next) => {
   const id = req.body.id;
 
-  if (!id) {
-    req.flash('message', 'Plz Select a category to update');
-    res.json({
-      status: 'fail',
-    });
-  }
+  if(!id)
+    return next(new AppError(' plz select category to update '),400)
 
-  // console.log(id);
 
   const category = await CatModel.findById(id);
 
-  if (!category) {
-    // console.log('no cat found wih this id');
-    // req.session.flash() = [];
-
-    req.flash('message', 'No Category found to be updated ');
-    return res.json({
-      status: 'fail',
-    });
-  }
+  if(!category)
+    return next(new AppError(' No category found '),500)
 
   const updatedCat = await CatModel.findByIdAndUpdate(id, req.body, {
     new: true,
     runValidators: true,
   });
 
-  req.flash('success', 'Changes Saved !');
-  res.json({
-    status: 'success',
-  });
+  res.status(200).json({
+    status:'success',
+    updatedCat:updateCategory
+  })
+
 });
 
 exports.deleteCategory = catchAsync(async (req, res, next) => {
+
   const id = req.body.id;
+  
+  if(!id)
+    return next(new AppError(' plz select category to delete '),400)
+  
+  const deleteCategory=await CatModel.findByIdAndDelete(id);
+  
+  if (!deleteCategory)
+  return next(new AppError(`No category found against id ${req.params.id}`,404));
+  
+  res.status(200).json({
+    status: 'success',
+    category: deleteCategory,
+  });
 
-  if (!id) {
-    req.flash('message', 'Plz Select a category to delete');
-    res.json({
-      status: 'fail',
-    });
-  }
-
-  // console.log(id);
-
-  try {
-    await CatModel.findByIdAndDelete(id);
-    req.flash('success', 'Category Deleted !');
-    res.json({
-      status: 'success',
-    });
-  } catch (err) {
-    // console.log('error deleting', err);
-
-    req.flash('message', 'Error Deleting Category ');
-    return res.json({
-      status: 'fail',
-    });
-  }
 });
 
-// console.log('hf');
