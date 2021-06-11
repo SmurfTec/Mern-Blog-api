@@ -9,18 +9,19 @@ const multerStorage = multer.memoryStorage();
 
 exports.getAllUsers = catchAsync(async (req, res) => {
   const users = await User.find({});
+
   if (!users) {
-    req.flash('message', 'No Users Yet !!!');
-    return res.render('users', {
-      message: req.flash('message'),
-      user: req.user,
-    });
+    return next(new AppError(`No user found `,500));
+
   }
 
-  res.render('users', { userName: req.user.name, users, user: req.user });
-  // res.status(200).json({
-  //    sucess: 'true',
-  // });
+  res.status(200).json({
+    status:'success',
+    userName:req.user.name,
+    users,
+    user:req.user
+  })
+
 });
 
 exports.getUser = catchAsync(async (req, res) => {
@@ -29,21 +30,27 @@ exports.getUser = catchAsync(async (req, res) => {
   const user = await User.findById(id);
 
   if (!user) {
-    req.flash('message', 'No User Found !');
-    return req.render('users', { message: req.flash('message') });
+    return next(new AppError(`No user found `,404));
   }
 
-  res.render('user', { profile: user, userName: user.name, user: req.user });
+  res.status(200).json({
+    status:'success',
+    profile:user,
+    userName:user.name,
+    user:req.user
+  })
+
 });
 
 exports.getProfile = (req, res) => {
-  res.render('profile', {
-    userName: req.user.name,
-    user: req.user,
-    message: req.flash('message'),
-    success: req.flash('success'),
-    passError: req.flash('passError'),
-  });
+  
+  res.status(200).json({
+    status:'success',
+    userName:req.user.name,
+    user:req.user,
+
+  })
+
 };
 
 exports.saveProfile = catchAsync(async (req, res) => {
@@ -52,26 +59,15 @@ exports.saveProfile = catchAsync(async (req, res) => {
   // console.log(req.body);
 
   if (!name || !email || !bio) {
-    req.flash('message', 'Plz Enter all Details to save profile');
-    res.json({
-      status: 'fail',
-      message: 'InComplete Profile Credentials',
-    });
+    return next(new AppError(` Plz Enter all Details to save profile `,400));
   }
 
   //   2 Check if user exists
   const currentUser = await User.findOne({ email: req.user.email });
 
   if (!currentUser) {
-    req.flash('message', 'No User Exists With this proile right Now');
-    res.json({
-      status: 'fail',
-      message: 'InComplete Profile Credentials',
-    });
+    return next(new AppError(` No User Exists With this proile right Now `,400));
   }
-
-  //   Update User Details
-  // console.log(currentUser);
 
   currentUser.name = name;
   currentUser.bio = bio;
@@ -79,8 +75,7 @@ exports.saveProfile = catchAsync(async (req, res) => {
   await currentUser.save();
 
   req.user = currentUser;
-  req.flash('success', 'Changes Saved');
-  res.json({
+  res.status(200).json({
     status: 'success',
   });
   // res.render('profile', { userName: req.user.name });

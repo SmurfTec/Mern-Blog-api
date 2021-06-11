@@ -39,53 +39,61 @@ const userSchema = new mongoose.Schema({
     default: true,
     select: false,
   },
-  passwordResetToken: {
-    type: String,
-  },
-  passwordResetExpires: {
-    type: Date,
-  },
+  passwordResetToken:String,
+  passwordResetExpires: Date,
+  activationLink:String,
   activated: {
     type: Boolean,
     default: true,
   },
-  activationLink: {
-    type: String,
-  },
+
 });
 
+
+
+// Encrpt the password ad Presave it
 userSchema.pre('save', async function (next) {
-  if (!this.image) {
-    this.image = `https://ui-avatars.com/api/?background=0D8ABC&color=fff&name=${this.name
-      .toString()
-      .split(' ')
-      .join('%20')}`;
-  }
   if (!this.isModified('password')) {
+    //  only run if password is modified
     return next();
   }
-
-  this.password = await bcrypt.hash(this.password, 11);
-
-  this.passwordConfirm = undefined;
-  this.email = this.email.toLowerCase();
+  this.password = await bcrypt.hash(this.password, 12); // hashing password
+  this.passwordConfirm = undefined; // delete passwordConfirm field
   next();
 });
 
-// No need to send  __v as response
-userSchema.pre(/^find/, function (next) {
-  // this - is query
-  this.select('-__v');
-  this.find({ active: { $ne: false } });
+// Add User Photo
+userSchema.pre('save', async function (next) {
+  if (this.photo) {
+    return next();
+  }
+  this.photo = `https://ui-avatars.com/api/?background=0D8ABC&color=fff&name=${this.name
+    .toString()
+    .split(' ')
+    .join('%20')}`;
   next();
 });
 
-userSchema.methods.comparePassword = async function (
-  candidatePassword,
-  userPassword
+
+// create accountActivationLink
+userSchema.methods.createAccountActivationLink = function () {
+  const activationToken = crypto.randomBytes(32).toString('hex');
+  // console.log(activationToken);
+  this.activationLink = crypto
+    .createHash('sha256')
+    .update(activationToken)
+    .digest('hex');
+  // console.log({ activationToken }, this.activationLink);
+  return activationToken;
+};
+
+// comparing password
+userSchema.methods.correctPassword = async function (
+  candidate_Password,
+  user_Password
 ) {
-  const result = await bcrypt.compare(candidatePassword, userPassword);
-  return result;
+  console.log(candidate_Password);
+  return await bcrypt.compare(candidate_Password, user_Password);
 };
 
 userSchema.methods.createPasswordResetToken = function () {
@@ -99,27 +107,9 @@ userSchema.methods.createPasswordResetToken = function () {
     .digest('hex');
 
   // console.log({ resetToken }, this.passwordResetToken);
-
   this.passwordResetExpires = Date.now() + 10 * 60 * 1000;
-
   return resetToken;
 };
 
-userSchema.methods.createAccountActivationLink = function () {
-  const activationToken = crypto.randomBytes(32).toString('hex');
-
-  // console.log(activationToken);
-
-  this.activationLink = crypto
-    .createHash('sha256')
-    .update(activationToken)
-    .digest('hex');
-
-  // console.log({ activationToken }, this.activationLink);
-
-  return activationToken;
-};
-
 const User = mongoose.model('User', userSchema);
-
 module.exports = User;

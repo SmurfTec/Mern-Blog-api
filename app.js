@@ -80,6 +80,7 @@ app.use('/dashboard', index);
 app.use('/posts', posts);
 app.use('/categories', categories);
 app.use('/users', users);
+
 app.get('/test', (req, res) => {
   res.json({
     success: 'true',

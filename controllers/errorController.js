@@ -1,100 +1,80 @@
-function handleVilidationErrorDB(err, req, res) {
-  // console.log('object . vales is', Object.values(err.errors));
-  const errors = Object.values(err.errors).map((el) => el.message);
+const AppError = require('./../utils/appError');
 
-  const message = `Invalid input Data. ${errors.join('. ')}`;
+const handleCastErrorDB = (err) => {
+   const message = `Invalid ${err.path}: ${err.value}.`;
+   return new AppError(message, 400);
+};
 
-  req.flash('message', message);
-  return res.json({
-    status: 'fail',
-    error: err,
-  });
-}
-function handleCastErrorDB(err, req, res) {
-  // console.log('object . vales is', Object.values(err.errors));
-  // const errors = Object.values(err.errors).map((el) => el.message);
-  // console.log(err.message);
-  // log
-  let regex = /(["'])(?:\\.|[^\\])*?\1/g;
+const handleDuplicateFieldsDB = (err) => {
+   
+   // const value = err.errmsg.match(/(["'])(\\?.)*?\1/)[0];
+   // console.log(value);
+   // const message = `Duplicate field value: ${value}. Please use another value!`;
+   const duplicate=Object.keys(err.keyValue)[0]
 
-  const values = err.message.match(regex);
-  const message = `The ${values[2]} with ${values[1]} : ${values[0]} does NOT Exist`.replace(
-    /"/g,
-    ''
-  );
+   const message=`Field  ${duplicate} already exists! Try Another ${duplicate}`
+   return new AppError(message, 400);
 
-  // req.flash('message', message);
-  return res.render('error', {
-    message,
-    user: req.user,
-    userName: req.user.name,
-  });
-}
+};
+const handleValidationErrorDB = (err) => {
+   const errors = Object.values(err.errors).map((el) => el.message);
 
-function sendErrorDevelopment(err, res) {
-  // console.log(err.errorStack);
-  res.status(err.statusCode).json({
-    status: err.status,
-    message: err.message,
-    statusCode: err.statusCode,
-    stack: err.stack,
-  });
-  // res.render('error');
-}
+   const message = `Invalid input data. ${errors.join('. ')}`;
+   return new AppError(message, 400);
+};
 
-function sendErrorProduction(err, res) {}
+const sendErrorDev = (err, res) => {
+   res.status(err.statusCode).json({
+      status: err.status,
+      error: err,
+      message: err.message,
+      stack: err.stack,
+   });
+};
+
+const sendErrorProd = (err, res) => {
+   // Operational, trusted error: send message to client
+   if (err.isOperational) {
+      res.status(err.statusCode).json({
+         status: err.status,
+         message: err.message,
+      });
+
+      // Programming or other unknown error: don't leak error details
+   } else {
+      // 1) Log error
+      console.error('ERROR 💥', err);
+
+      // 2) Send generic message
+      res.status(500).json({
+         status: 'error',
+         message: 'Something went very wrong!',
+      });
+   }
+};
 
 module.exports = (err, req, res, next) => {
-  // set locals, only providing error in development
-  err.statusCode = err.statusCode || 500;
-  err.status = err.status || 'error';
+   // console.log(err.stack);
 
-  console.log('inside error controller');
-  console.log(err);
+   err.statusCode = err.statusCode || 500;
+   err.status = err.status || 'error';
 
-  console.log(`process.env.NODE_ENV`, process.env.NODE_ENV);
+   console.log('here');
+   if (process.env.NODE_ENV === 'development') {
+      sendErrorDev(err, res);
+   } 
+   else if (process.env.NODE_ENV === 'production') {
+      let error = { ...err };
 
-  if (process.env.NODE_ENV === 'development') {
-    sendErrorDevelopment(err, res);
-  } else if (process.env.NODE_ENV === 'production') {
-    if (err.name === 'JsonWebTokenError') {
-      req.flash('message', 'You Must Login First');
-      return res.render('login', { message: req.flash('message') });
-    } else if (err.name === 'TokenExpiredError') {
-      req.flash('message', 'You Must Login First');
-      return res.render('login', { message: req.flash('message') });
-      // return res.redirect('/login');
-    } else if (err.name === 'ValidationError') {
-      handleVilidationErrorDB(err, req, res);
-    } else if (err.name === 'CastError') {
-      handleCastErrorDB(err, req, res);
-    } else if (err.code === 11000) {
-      req.flash(
-        'error',
-        `Field  ${JSON.stringify(err.keyValue)} already exists! Try Another`
-      );
-      return res.status(200).json({
-        status: 'fail',
-      });
-    } else if (err.statusCode === 404) {
-      req.flash('error', '404 Not Found !');
-      return res.render('error', {
-        // message: err,
-        message: '404 NOT FOUND !',
-        userName: req.user.name,
-        user: req.user,
-      });
-    } else {
-      req.flash(
-        'error',
-        'Something went very Wrong ! Try Again in a little bit !'
-      );
-      return res.render('error', {
-        // message: err,
-        message: 'Something went very Wrong ! Try Again in a little bit !',
-        userName: req.user.name,
-        user: req.user,
-      });
-    }
-  }
+      if (error.name === 'CastError')
+         error = handleCastErrorDB(error);
+      if (error.code === 11000)
+         
+         error = handleDuplicateFieldsDB(error);
+
+      if (error.name === 'ValidationError')
+         error = handleValidationErrorDB(error);
+
+      sendErrorProd(error, res);
+   }
 };

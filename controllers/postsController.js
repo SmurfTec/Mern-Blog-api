@@ -9,6 +9,7 @@ const Comment = require('./../models/commentModel');
 // const User = require('./../models/userModel');
 const APIFeatures = require('./../utils/apiFeatures');
 const AppError = require('../utils/appError');
+const catchAsync = require('./../utils/catchAsync');
 
 let io = {};
 // const { server, Pie } = require('./../app');
@@ -53,7 +54,7 @@ exports.getAllPosts = catchAsync(async (req, res) => {
     });
   }
 
-  // Filer by owner of post
+  // Filter by owner of post
   if (req.query.postBy) {
     let postUsers = JSON.stringify(req.query.postBy);
     postUsers = postUsers.split(',');
@@ -82,17 +83,17 @@ exports.getAllPosts = catchAsync(async (req, res) => {
     }
   }
 
-  res.render('posts', {
-    userName: req.user.name,
+  res.status(200).json({
+    userName:req.user.name,
     posts,
     categories,
-    user: req.user,
-    message: req.flash('message'),
-  });
+    user:req.user,
+
+  })
+
 });
 
 exports.addNewPost = catchAsync(async (req, res) => {
-  // console.log(req.body);
 
   // getting all cates for posts.ejs
   const categories = await CatModel.find({});
@@ -112,13 +113,13 @@ exports.addNewPost = catchAsync(async (req, res) => {
 
   const posts = await Post.find({});
 
-  res.render('posts', {
-    userName: req.user.name,
+  res.status(201).json({
+    userName:req.user.name,
     posts,
     categories,
-    user: req.user,
-    message: req.flash('message'),
-  });
+    user:req.user
+  })
+
 });
 let mySocket = {};
 exports.getPost = catchAsync(async (req, res, next) => {
@@ -138,22 +139,9 @@ exports.getPost = catchAsync(async (req, res, next) => {
   // .execPopulate();
 
   if (!post) {
-    req.flash(
-      'message',
-      'The post you are trying to access is either deleted or is private !!!'
-    );
-    return res.render('post', {
-      message: req.flash('message'),
-      userName: req.user.name,
-      user: req.user,
-      post: undefined,
-      categories,
-    });
-  }
 
-  // console.log('====================================');
-  // console.log(post);
-  // console.log('====================================');
+    return next(new AppError(' the post you are trying to access is either deleted or is private !! '),500)
+  }
 
   // 2 Getting total Likes of the post
   console.log(req.params.id);
@@ -179,28 +167,30 @@ exports.getPost = catchAsync(async (req, res, next) => {
 
   if (!like) {
     console.log('no like');
-    res.render('post', {
+  
+    res.status(204).json({
       post,
       userName: req.user.name,
       like: false,
       likes: likesTotal,
-      delPostErr: req.flash('delPostErr'),
       comments,
       user: req.user,
       categories,
-    });
+    })
+
   } else {
-    res.render('post', {
+
+    res.json(200).json({
       user: req.user,
       post,
       userName: req.user.name,
       like: like.like,
       likes: likesTotal,
-      delPostErr: req.flash('delPostErr'),
       comments,
       categories,
     });
   }
+
 });
 
 exports.likePost = catchAsync(async (req, res, next) => {
@@ -259,9 +249,10 @@ exports.likePost = catchAsync(async (req, res, next) => {
     broadcast: false,
   });
 
-  res.json({
+  res.status(200).json({
     status: 'success',
   });
+
 });
 
 exports.deletePost = catchAsync(async (req, res, next) => {
@@ -288,9 +279,10 @@ exports.deletePost = catchAsync(async (req, res, next) => {
     socketId: req.body.socketId,
   });
 
-  res.json({
+  res.status(200).json({
     status: 'success',
   });
+
 });
 
 exports.commentPost = catchAsync(async (req, res, nxt) => {
@@ -331,7 +323,7 @@ exports.commentPost = catchAsync(async (req, res, nxt) => {
     socketId: req.body.socketId,
   });
 
-  res.json({
+  res.status(200).json({
     status: 'success',
   });
 });
@@ -353,7 +345,7 @@ exports.deleteComment = catchAsync(async (req, res, next) => {
     comments: comments.length,
   });
 
-  res.json({
+  res.status(200).json({
     status: 'success',
   });
 });
@@ -376,6 +368,7 @@ exports.updatePost = catchAsync(async (req, res, next) => {
   await post.save();
 
   res.status(200).json({ status: 'success ', data: { post } });
+  
 });
 
 exports.editComment = catchAsync(async (req, res, next) => {

@@ -27,8 +27,9 @@ exports.addCategory = catchAsync(async (req, res, next) => {
     summary,
   });
   
-  res.status(200).json({
+  res.status(201).json({
     status: 'success',
+    category:newCategory
   });
 
 });
@@ -43,12 +44,10 @@ exports.getCategory = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status:'success',
+    category:category,
+    user:req.user
 
   })
-    es.render('category', {
-    category:category,
-    user: req.user,
-  });
 
 });
 
@@ -58,9 +57,7 @@ exports.updateCategory = catchAsync(async (req, res, next) => {
   if(!id)
     return next(new AppError(' plz select category to update '),400)
 
-
   const category = await CatModel.findById(id);
-
   if(!category)
     return next(new AppError(' No category found '),500)
 
@@ -71,7 +68,7 @@ exports.updateCategory = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status:'success',
-    updatedCat:updateCategory
+    updatedCat:updatedCat
   })
 
 });
@@ -79,19 +76,20 @@ exports.updateCategory = catchAsync(async (req, res, next) => {
 exports.deleteCategory = catchAsync(async (req, res, next) => {
 
   const id = req.body.id;
-  
+
   if(!id)
     return next(new AppError(' plz select category to delete '),400)
-  
+
   const deleteCategory=await CatModel.findByIdAndDelete(id);
+  
   
   if (!deleteCategory)
   return next(new AppError(`No category found against id ${req.params.id}`,404));
   
   res.status(200).json({
-    status: 'success',
-    category: deleteCategory,
-  });
+    status:'success',
+    category:deleteCategory
+  })
 
 });
 
