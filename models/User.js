@@ -39,17 +39,14 @@ const userSchema = new mongoose.Schema({
     default: true,
     select: false,
   },
-  passwordResetToken:String,
+  passwordResetToken: String,
   passwordResetExpires: Date,
-  activationLink:String,
+  activationLink: String,
   activated: {
     type: Boolean,
     default: true,
   },
-
 });
-
-
 
 // Encrpt the password ad Presave it
 userSchema.pre('save', async function (next) {
@@ -64,16 +61,15 @@ userSchema.pre('save', async function (next) {
 
 // Add User Photo
 userSchema.pre('save', async function (next) {
-  if (this.photo) {
+  if (this.image) {
     return next();
   }
-  this.photo = `https://ui-avatars.com/api/?background=0D8ABC&color=fff&name=${this.name
+  this.image = `https://ui-avatars.com/api/?background=0D8ABC&color=fff&name=${this.name
     .toString()
     .split(' ')
     .join('%20')}`;
   next();
 });
-
 
 // create accountActivationLink
 userSchema.methods.createAccountActivationLink = function () {

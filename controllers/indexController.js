@@ -1,5 +1,5 @@
 const catModel = require('./../models/categories');
-const User = require('./../models/userModel');
+const User = require('./../models/User');
 const Post = require('./../models/postModel');
 const catchAsync = require('./../utils/catchAsync');
 
@@ -12,12 +12,11 @@ module.exports = catchAsync(async (req, res) => {
   // console.log(cats.length);
 
   res.status(200).json({
-    status:'success',
-    categories:cats,
+    status: 'success',
+    categories: cats,
     users,
     posts,
     userName,
-    user:req.User
-  })
-
+    user: req.User,
+  });
 });

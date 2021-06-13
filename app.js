@@ -1,112 +1,73 @@
-const dotenv = require('dotenv');
 const express = require('express');
+const app = express();
+const cors = require('cors');
+const morgan = require('morgan');
+const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
+const mongoSanitize = require('express-mongo-sanitize');
+const xss = require('xss-clean');
 const path = require('path');
-const cookieParser = require('cookie-parser');
-const logger = require('morgan');
-const session = require('express-session');
-const flash = require('connect-flash');
-const mongoose = require('mongoose');
-const socket = require('socket.io');
+const hpp = require('hpp');
 
-// Routers
-var index = require('./routes/indexRoutes');
-var users = require('./routes/userRoutes');
-var posts = require('./routes/postRoutes');
-var categories = require('./routes/categoryRoutes');
+const userRouter = require('./routers/userRouter');
+const authRoutes = require('./routers/authRoutes');
 
-	
-dotenv.config({
-  path: './config.env',
-});
-const server = require('./server');
-// console.log('fuck', fuck);
+const globalErrorHandler = require('./middlewares/globalErrorHandler');
 
-const DB = process.env.DATABASE;
-// const DB = process.env.DATABASE_LOCAL;
-mongoose
-  .connect(DB, {
-    useNewUrlParser: true,
-    useCreateIndex: true,
-    useFindAndModify: false,
-    useUnifiedTopology: true,
-  })
-  .then((con) => {
-    // console.log(con);
-    console.log('Database Connected Sccessfully');
-  });
-
-const errorController = require('./controllers/errorController');
 const AppError = require('./utils/appError');
 
-var app = express();
-
-// error handler
-
-app.use(logger('dev'));
-
-app.use(express.json());
-app.use(cookieParser());
 // view engine setup
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
-// app.set('views', `${__dirname}/views`);
 
-// initialise session middleware - flash-express depends on it
-app.use(
-  session({
-    secret: 'MySecret 344j ff ',
-    cookie: { maxAge: 600000 },
-    resave: false,
-    saveUninitialized: false,
-  })
-);
+app.use(express.json());
 
-app.use(flash());
+console.log(process.env.NODE_ENV);
 
-app.use(express.static(`${__dirname}/public`));
+// set security http headers
+app.use(helmet());
 
-// Routes
-app.use(function (req, res, next) {
-  if (req.originalUrl && req.originalUrl.split('/').pop() === 'favicon.ico') {
-    return res.sendStatus(204);
-  }
+if (process.env.NODE_ENV === 'development') {
+  app.use(morgan('dev'));
+}
 
-  return next();
+// $ CORS
+app.use(cors());
+
+//  set limit request from same API in timePeroid from same ip
+const limiter = rateLimit({
+  max: 100, //   max number of limits
+  windowMs: 60 * 60 * 1000, // hour
+  message: ' Too many req from this IP , please Try  again in an Hour ! ',
 });
 
-// all Routes
+app.use('/api', limiter);
 
-app.use('/dashboard', index);
-app.use('/posts', posts);
-app.use('/categories', categories);
-app.use('/users', users);
+//  Body Parser  => reading data from body into req.body protect from scraping etc
+app.use(express.json({ limit: '10kb' }));
 
-app.get('/test', (req, res) => {
-  res.json({
-    success: 'true',
-  });
+// Data sanitization against NoSql query injection
+app.use(mongoSanitize()); //   filter out the dollar signs protect from  query injection attact
+
+// Data sanitization against XSS
+app.use(xss()); //    protect from molision code coming from html
+
+// testing middleware
+app.use((req, res, next) => {
+  console.log('this is a middleware');
+  next();
 });
-app.use('/', index);
 
-// HANDLING UNHANDLED ROUTES
+// routes
+app.use('/api/users', userRouter);
+app.use('/api/auth', authRoutes);
+
+// handling all (get,post,update,delete.....) unhandled routes
 app.all('*', (req, res, next) => {
-  console.log('404');
-  next(new AppError(`Can't find ${req.originalUrl} on this server`, 404));
+  next(new AppError(`Can't find ${req.originalUrl} on the server`, 404));
 });
 
-app.use(errorController);
+// error handling middleware
+app.use(globalErrorHandler);
 
-server.appListen(app);
-let socketServer = server.getServer();
-
-// Socket.io Connection
-io = socket(socketServer);
-
-io.on('connection', (socket) => {
-  mySocket = socket;
-
-  // I want to sent this socket to every route Controller
-  console.log('connection made');
-});
-// console.log(s);
-module.exports = { io };
+module.exports = app;

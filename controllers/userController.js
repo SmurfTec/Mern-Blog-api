@@ -1,7 +1,7 @@
 const multer = require('multer');
 const sharp = require('sharp');
 
-const User = require('../models/userModel');
+const User = require('../models/User');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('./../utils/appError');
 
@@ -11,17 +11,21 @@ exports.getAllUsers = catchAsync(async (req, res) => {
   const users = await User.find({});
 
   if (!users) {
-    return next(new AppError(`No user found `,500));
-
+    return next(new AppError(`No user found `, 500));
   }
 
   res.status(200).json({
-    status:'success',
-    userName:req.user.name,
+    status: 'success',
+    userName: req.user.name,
     users,
-    user:req.user
-  })
+    user: req.user,
+  });
+});
 
+exports.getMe = catchAsync(async (req, res, next) => {
+  req.params.id = req.user._id;
+
+  next();
 });
 
 exports.getUser = catchAsync(async (req, res) => {
@@ -30,27 +34,23 @@ exports.getUser = catchAsync(async (req, res) => {
   const user = await User.findById(id);
 
   if (!user) {
-    return next(new AppError(`No user found `,404));
+    return next(new AppError(`No user found `, 404));
   }
 
   res.status(200).json({
-    status:'success',
-    profile:user,
-    userName:user.name,
-    user:req.user
-  })
-
+    status: 'success',
+    profile: user,
+    userName: user.name,
+    user: req.user,
+  });
 });
 
 exports.getProfile = (req, res) => {
-  
   res.status(200).json({
-    status:'success',
-    userName:req.user.name,
-    user:req.user,
-
-  })
-
+    status: 'success',
+    userName: req.user.name,
+    user: req.user,
+  });
 };
 
 exports.saveProfile = catchAsync(async (req, res) => {
@@ -59,14 +59,16 @@ exports.saveProfile = catchAsync(async (req, res) => {
   // console.log(req.body);
 
   if (!name || !email || !bio) {
-    return next(new AppError(` Plz Enter all Details to save profile `,400));
+    return next(new AppError(` Plz Enter all Details to save profile `, 400));
   }
 
   //   2 Check if user exists
   const currentUser = await User.findOne({ email: req.user.email });
 
   if (!currentUser) {
-    return next(new AppError(` No User Exists With this proile right Now `,400));
+    return next(
+      new AppError(` No User Exists With this proile right Now `, 400)
+    );
   }
 
   currentUser.name = name;

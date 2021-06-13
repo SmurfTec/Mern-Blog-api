@@ -1,13 +1,14 @@
 var express = require('express');
 var router = express.Router();
 
-const authController = require('../controllers/authController');
 const userController = require('../controllers/userController');
+const protect = require('../middlewares/protect');
 
-router.use(authController.protect);
+router.use(protect);
 
 /* GET home page. */
 router.get('/', userController.getAllUsers);
+router.get('/me', userController.getMe, userController.getUser);
 
 // router.get('/:id', userController.getUser);
 

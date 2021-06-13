@@ -2,7 +2,7 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 
 const catchAsync = require('./../utils/catchAsync');
-const User = require('../models/userModel');
+const User = require('../models/User');
 
 exports.login = async (req, res) => {
   // Check if user is Already logged in

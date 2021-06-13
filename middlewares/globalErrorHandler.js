@@ -30,6 +30,7 @@ const sendErrorDev = (err, res) => {
 
 const sendErrorProd = (err, res) => {
   // Operational, trusted error: send message to client
+  console.log(`err.message`, err.message);
   if (err.isOperational) {
     res.status(err.statusCode).json({
       status: err.status,
@@ -50,10 +51,12 @@ const sendErrorProd = (err, res) => {
 };
 
 module.exports = (err, req, res, next) => {
-  // console.log(err.stack);
-
   err.statusCode = err.statusCode || 500;
   err.status = err.status || 'error';
+  console.log('err', err);
+  console.log('err.message', err.message);
+  console.log('err.status', err.status);
+  console.log(`err.statusCode`, err.statusCode);
 
   console.log('here');
   if (process.env.NODE_ENV === 'development') {
@@ -65,6 +68,8 @@ module.exports = (err, req, res, next) => {
     if (error.code === 11000) error = handleDuplicateFieldsDB(error);
     if (error.name === 'ValidationError')
       error = handleValidationErrorDB(error);
+
+    console.log('error.message', error.message);
 
     sendErrorProd(error, res);
   }

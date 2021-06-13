@@ -6,7 +6,7 @@ const Post = require('./../models/postModel');
 const CatModel = require('./../models/categories');
 const Like = require('./../models/likes');
 const Comment = require('./../models/commentModel');
-// const User = require('./../models/userModel');
+// const User = require('./../models/User');
 const APIFeatures = require('./../utils/apiFeatures');
 const AppError = require('../utils/appError');
 const catchAsync = require('./../utils/catchAsync');
@@ -84,17 +84,14 @@ exports.getAllPosts = catchAsync(async (req, res) => {
   }
 
   res.status(200).json({
-    userName:req.user.name,
+    userName: req.user.name,
     posts,
     categories,
-    user:req.user,
-
-  })
-
+    user: req.user,
+  });
 });
 
 exports.addNewPost = catchAsync(async (req, res) => {
-
   // getting all cates for posts.ejs
   const categories = await CatModel.find({});
 
@@ -114,12 +111,11 @@ exports.addNewPost = catchAsync(async (req, res) => {
   const posts = await Post.find({});
 
   res.status(201).json({
-    userName:req.user.name,
+    userName: req.user.name,
     posts,
     categories,
-    user:req.user
-  })
-
+    user: req.user,
+  });
 });
 let mySocket = {};
 exports.getPost = catchAsync(async (req, res, next) => {
@@ -139,8 +135,12 @@ exports.getPost = catchAsync(async (req, res, next) => {
   // .execPopulate();
 
   if (!post) {
-
-    return next(new AppError(' the post you are trying to access is either deleted or is private !! '),500)
+    return next(
+      new AppError(
+        ' the post you are trying to access is either deleted or is private !! '
+      ),
+      500
+    );
   }
 
   // 2 Getting total Likes of the post
@@ -167,7 +167,7 @@ exports.getPost = catchAsync(async (req, res, next) => {
 
   if (!like) {
     console.log('no like');
-  
+
     res.status(204).json({
       post,
       userName: req.user.name,
@@ -176,10 +176,8 @@ exports.getPost = catchAsync(async (req, res, next) => {
       comments,
       user: req.user,
       categories,
-    })
-
+    });
   } else {
-
     res.json(200).json({
       user: req.user,
       post,
@@ -190,7 +188,6 @@ exports.getPost = catchAsync(async (req, res, next) => {
       categories,
     });
   }
-
 });
 
 exports.likePost = catchAsync(async (req, res, next) => {
@@ -252,7 +249,6 @@ exports.likePost = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: 'success',
   });
-
 });
 
 exports.deletePost = catchAsync(async (req, res, next) => {
@@ -282,7 +278,6 @@ exports.deletePost = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: 'success',
   });
-
 });
 
 exports.commentPost = catchAsync(async (req, res, nxt) => {
@@ -368,7 +363,6 @@ exports.updatePost = catchAsync(async (req, res, next) => {
   await post.save();
 
   res.status(200).json({ status: 'success ', data: { post } });
-  
 });
 
 exports.editComment = catchAsync(async (req, res, next) => {
