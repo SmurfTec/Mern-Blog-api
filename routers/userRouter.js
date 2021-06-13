@@ -9,6 +9,7 @@ router.use(protect);
 /* GET home page. */
 router.get('/', userController.getAllUsers);
 router.get('/me', userController.getMe, userController.getUser);
+router.patch('/me', userController.getMe, userController.updatedUser);
 
 // router.get('/:id', userController.getUser);
 

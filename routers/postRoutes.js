@@ -1,11 +1,10 @@
 var express = require('express');
 var router = express.Router();
-;
 
-const authController = require('../controllers/authController');
 const postsController = require('../controllers/postsController');
+const protect = require('../middlewares/protect');
 
-router.use(authController.protect);
+router.use(protect);
 
 /* GET home page. */
 router
@@ -21,9 +20,7 @@ router
 
 router.route('/:id/like').patch(postsController.likePost);
 
-router
-  .route('/:id/comment')
-  .post(postsController.commentPost);
+router.route('/:id/comment').post(postsController.commentPost);
 
 router
   .route('/comments/:id')

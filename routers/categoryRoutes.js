@@ -2,10 +2,9 @@ var express = require('express');
 var router = express.Router();
 
 const categoriesController = require('../controllers/categoriesController');
-const authController = require('../controllers/authController');
+const protect = require('../middlewares/protect');
 
-
-router.use(authController.protect);
+router.use(protect);
 
 router
   .route('/')

@@ -1,7 +1,6 @@
 // const { s, pro } = require('./../app.js');
 const socket = require('socket.io');
 
-const catchAsync = require('./../utils/catchAsync');
 const Post = require('./../models/postModel');
 const CatModel = require('./../models/categories');
 const Like = require('./../models/likes');
@@ -92,9 +91,7 @@ exports.getAllPosts = catchAsync(async (req, res) => {
 });
 
 exports.addNewPost = catchAsync(async (req, res) => {
-  // getting all cates for posts.ejs
-  const categories = await CatModel.find({});
-
+  console.log(`req.body`, req.body);
   // Get Category Id
   const CatId = await CatModel.findOne({
     title: req.body.category,
@@ -108,16 +105,11 @@ exports.addNewPost = catchAsync(async (req, res) => {
     user: req.user.id,
   });
 
-  const posts = await Post.find({});
-
   res.status(201).json({
-    userName: req.user.name,
-    posts,
-    categories,
-    user: req.user,
+    status: 'success',
+    Newpost,
   });
 });
-let mySocket = {};
 exports.getPost = catchAsync(async (req, res, next) => {
   // 1 Getting post
 

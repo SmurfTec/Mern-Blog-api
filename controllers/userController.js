@@ -109,3 +109,24 @@ exports.deleteAvatar = catchAsync(async (req, res) => {
     user: updatedUser,
   });
 });
+
+exports.updatedUser = catchAsync(async (req, res, next) => {
+  const id = req.params.id;
+
+  const user = await User.findByIdAndUpdate(
+    id,
+    { $set: req.body },
+    { new: true, runValidators: true }
+  );
+
+  console.log(`user`, user);
+
+  if (!user) {
+    return next(new AppError(`No user found `, 404));
+  }
+
+  res.status(200).json({
+    status: 'success',
+    user: req.user,
+  });
+});

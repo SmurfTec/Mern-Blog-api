@@ -13,7 +13,7 @@ const categoriesSchema = new mongoose.Schema({
   summary: {
     type: String,
     required: [true, 'A Categories must has a summary'],
-    minlength: [50, "A Category's Summary must NOT be less than 50 characters"],
+    minlength: [50, "A Category's Summary must NOT be less than 20 characters"],
   },
 });
 
