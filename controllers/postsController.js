@@ -95,7 +95,7 @@ exports.addNewPost = catchAsync(async (req, res) => {
   // Get Category Id
   const CatId = await CatModel.findOne({
     title: req.body.category,
-  }).select('_id');
+  }).select('_id title');
 
   //  Add New Post
   const Newpost = await Post.create({
@@ -107,7 +107,7 @@ exports.addNewPost = catchAsync(async (req, res) => {
 
   res.status(201).json({
     status: 'success',
-    Newpost,
+    post: Newpost,
   });
 });
 exports.getPost = catchAsync(async (req, res, next) => {
@@ -160,7 +160,7 @@ exports.getPost = catchAsync(async (req, res, next) => {
   if (!like) {
     console.log('no like');
 
-    res.status(204).json({
+    return res.status(202).json({
       post,
       userName: req.user.name,
       like: false,
@@ -170,7 +170,7 @@ exports.getPost = catchAsync(async (req, res, next) => {
       categories,
     });
   } else {
-    res.json(200).json({
+    return res.status(200).json({
       user: req.user,
       post,
       userName: req.user.name,
@@ -183,9 +183,6 @@ exports.getPost = catchAsync(async (req, res, next) => {
 });
 
 exports.likePost = catchAsync(async (req, res, next) => {
-  const { io } = require('./../app');
-  // Get Post Id
-
   const post = await Post.findById(req.params.id);
 
   const postId = post._id;
@@ -215,9 +212,8 @@ exports.likePost = catchAsync(async (req, res, next) => {
     });
 
     if (!newLike) {
-      req.flash('likeErr', 'Error Liking the post !');
-      return res.render('post', {
-        likeErr: req.flash('likeErr'),
+      return res.status(200).json({
+        status: 'success',
       });
     }
   }
@@ -231,41 +227,24 @@ exports.likePost = catchAsync(async (req, res, next) => {
   } else {
     liking = true;
   }
-  io.sockets.emit('likedPost', {
-    like: liking,
-    likes: postLikes.length,
-    email: req.user.email,
-    broadcast: false,
-  });
 
   res.status(200).json({
     status: 'success',
+    postLikes,
+    like: liking,
   });
 });
 
 exports.deletePost = catchAsync(async (req, res, next) => {
   // Checking if user who is deleting post is the one who made post
-  const { io } = require('./../app');
   const post = await Post.findOne({
     user: req.user,
   });
 
-  if (!post) {
-    req.flash(
-      'delPostErr',
-      'Only user who created post can actually delete it !'
-    );
-    return res.json({
-      status: 'success',
-    });
-  }
+  if (!post)
+    return next(new AppError(`You Don't have Power to delete this post`, 403));
 
   await Post.findByIdAndDelete(req.params.id);
-
-  req.flash('message', 'Post is deleted !');
-  io.sockets.emit('postDeleted', {
-    socketId: req.body.socketId,
-  });
 
   res.status(200).json({
     status: 'success',

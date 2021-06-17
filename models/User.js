@@ -32,7 +32,7 @@ const userSchema = new mongoose.Schema({
   bio: {
     type: String,
     required: [true, 'A User must has a Bio'],
-    minlength: [30, 'A Bio must NOT be less than 30 characters long'],
+    minlength: [10, 'A Bio must NOT be less than 10 characters long'],
   },
   active: {
     type: Boolean,
