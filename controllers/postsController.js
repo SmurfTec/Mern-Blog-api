@@ -252,9 +252,7 @@ exports.deletePost = catchAsync(async (req, res, next) => {
 });
 
 exports.commentPost = catchAsync(async (req, res, nxt) => {
-  console.log('socket id is ', req.body.socketId);
-  const id = req.originalUrl.split('/')[2];
-  const { io } = require('./../app');
+  const id = req.params.id;
 
   const post = await Post.findById(id);
   const user = req.user;
@@ -270,7 +268,6 @@ exports.commentPost = catchAsync(async (req, res, nxt) => {
   });
 
   if (!newComment) {
-    req.flash('message', 'error commenting post');
     return res.json({
       status: 'fail',
     });
@@ -278,38 +275,17 @@ exports.commentPost = catchAsync(async (req, res, nxt) => {
 
   // I want to broadcast here
   // console.log('io is', io);
-  io.sockets.emit('comment', {
-    comment: req.body.comment,
-    user: user.name,
-    id: newComment._id,
-    date: newComment.getFormattedDate(),
-    author: req.user.email,
-    comments: newComment ? postComments.length + 1 : postComments.length,
-    // broadcast: true,
-    socketId: req.body.socketId,
-  });
 
   res.status(200).json({
     status: 'success',
+    comment: newComment,
   });
 });
 
 exports.deleteComment = catchAsync(async (req, res, next) => {
-  const id = req.originalUrl.split('/')[2];
-  const { io } = require('./../app');
-
   await Comment.findByIdAndDelete(req.params.id);
   const { postId } = req.body;
   console.log(req.body);
-
-  const comments = await Comment.find({
-    post: postId,
-  });
-
-  io.sockets.emit('commentDeleted', {
-    id: req.params.id,
-    comments: comments.length,
-  });
 
   res.status(200).json({
     status: 'success',
@@ -325,14 +301,16 @@ exports.updatePost = catchAsync(async (req, res, next) => {
     return next(new AppError(`Plz Provide Title and BOdy with request`, 400));
   }
 
-  const post = await Post.findById(id);
-  if (!post) return next(new AppError(`No Post found against id ${id}`, 404));
+  const post = await Post.findByIdAndUpdate(id, req.body);
 
-  post.title = title;
-  post.body = body;
+  // const post = await Post.findById(id);
+  // if (!post) return next(new AppError(`No Post found against id ${id}`, 404));
 
-  await post.save();
+  // post.title = title;
+  // post.body = body;
 
+  // await post.save();
+  console.log(`post`, post);
   res.status(200).json({ status: 'success ', data: { post } });
 });
 
@@ -358,5 +336,6 @@ exports.editComment = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: 'success',
+    comment,
   });
 });
